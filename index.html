@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0f766e">
+    <title>Облік мандрівок</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Мандрівки з Долини</p>
+        <h1>Облік клієнтів і оплат</h1>
+        <p id="syncStatus" class="sync-status">Дані зберігаються на цьому пристрої</p>
+      </div>
+      <div class="topbar-actions">
+        <button id="installBtn" class="ghost" hidden>Додати на Android</button>
+        <button id="syncNowBtn" class="ghost">Оновити</button>
+        <button id="settingsBtn" class="ghost">Спільний доступ</button>
+        <button id="exportBtn" class="ghost">Резервна копія</button>
+        <label class="ghost file-label">
+          Відновити
+          <input id="importInput" type="file" accept="application/json">
+        </label>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel trip-panel" aria-label="Поїздки">
+        <div class="section-title">
+          <h2>Поїздки</h2>
+          <button id="newTripBtn">Нова поїздка</button>
+        </div>
+        <form id="tripForm" class="form hidden">
+          <div class="grid two">
+            <label>Напрямок
+              <input id="tripDirection" required placeholder="Наприклад: Буковель">
+            </label>
+            <label>Дата
+              <input id="tripDate" type="date" required>
+            </label>
+          </div>
+          <label>Примітка
+            <input id="tripNote" placeholder="Автобус, організатор, деталі">
+          </label>
+          <div class="form-actions">
+            <button type="submit">Зберегти</button>
+            <button type="button" id="cancelTripBtn" class="secondary">Скасувати</button>
+          </div>
+        </form>
+        <div id="tripList" class="trip-list"></div>
+      </section>
+
+      <section class="panel client-panel" aria-label="Клієнти">
+        <div class="section-title client-heading">
+          <div>
+            <h2 id="activeTripTitle">Оберіть поїздку</h2>
+            <p id="activeTripMeta" class="muted">Тут буде список людей, оплати й місця посадки.</p>
+          </div>
+          <button id="newClientBtn" disabled>Додати людину</button>
+        </div>
+
+        <div class="summary" id="summary" hidden>
+          <div><span>Людей</span><strong id="peopleCount">0</strong></div>
+          <div><span>Сума</span><strong id="totalAmount">0 грн</strong></div>
+          <div><span>Оплачено</span><strong id="paidAmount">0 грн</strong></div>
+          <div><span>Борг</span><strong id="debtAmount">0 грн</strong></div>
+        </div>
+
+        <form id="clientForm" class="form hidden">
+          <input id="clientId" type="hidden">
+          <div class="grid two">
+            <label>Ім'я та прізвище
+              <input id="clientName" required placeholder="Наприклад: Іван Петренко">
+            </label>
+            <label>Телефон
+              <input id="clientPhone" placeholder="+380...">
+            </label>
+          </div>
+          <div class="grid three">
+            <label>Повна вартість, грн
+              <input id="clientPrice" type="number" min="0" step="1" value="0">
+            </label>
+            <label>Аванс / оплачено, грн
+              <input id="clientPaid" type="number" min="0" step="1" value="0">
+            </label>
+            <label>Дата оплати
+              <input id="clientPaidDate" type="date">
+            </label>
+          </div>
+          <div class="grid two">
+            <label>Де сідає
+              <input id="clientBoarding" placeholder="Долина, Калуш, Львів...">
+            </label>
+            <label>Стан
+              <select id="clientStatus">
+                <option value="reserved">Заброньовано</option>
+                <option value="advance">Є аванс</option>
+                <option value="paid">Оплачено</option>
+                <option value="cancelled">Скасовано</option>
+              </select>
+            </label>
+          </div>
+          <label>Примітка
+            <input id="clientNote" placeholder="Місце, побажання, хто передав гроші">
+          </label>
+          <div class="form-actions">
+            <button type="submit">Зберегти людину</button>
+            <button type="button" id="cancelClientBtn" class="secondary">Скасувати</button>
+          </div>
+        </form>
+
+        <div class="tools">
+          <input id="searchInput" type="search" placeholder="Пошук за ім'ям, телефоном або місцем посадки">
+          <button id="csvBtn" class="ghost" disabled>Список для таблиці</button>
+        </div>
+
+        <div id="emptyState" class="empty">Оберіть або створіть поїздку.</div>
+        <div id="clientList" class="client-list"></div>
+      </section>
+    </main>
+
+    <dialog id="settingsDialog" class="settings-dialog">
+      <form id="settingsForm" method="dialog" class="settings-box">
+        <h2>Спільний доступ</h2>
+        <p class="muted">Для двох телефонів потрібне спільне онлайн-сховище. Вставте сюди адресу, яку дасть Google Apps Script, і однаковий пароль на обох телефонах.</p>
+        <label>Адреса онлайн-сховища
+          <input id="remoteUrl" placeholder="https://script.google.com/.../exec">
+        </label>
+        <label>Пароль для доступу
+          <input id="remotePassword" type="password" placeholder="Придумайте пароль">
+        </label>
+        <div class="form-actions">
+          <button type="submit">Зберегти</button>
+          <button type="button" id="testSyncBtn" class="secondary">Перевірити</button>
+          <button type="button" id="closeSettingsBtn" class="secondary">Закрити</button>
+        </div>
+      </form>
+    </dialog>
+
+    <template id="tripTemplate">
+      <button class="trip-item">
+        <span class="trip-main"></span>
+        <span class="trip-sub"></span>
+      </button>
+    </template>
+
+    <template id="clientTemplate">
+      <article class="client-card">
+        <div class="client-top">
+          <div>
+            <h3></h3>
+            <p class="muted client-phone"></p>
+          </div>
+          <span class="badge"></span>
+        </div>
+        <dl class="client-details">
+          <div><dt>Вартість</dt><dd class="price"></dd></div>
+          <div><dt>Оплачено</dt><dd class="paid"></dd></div>
+          <div><dt>Борг</dt><dd class="debt"></dd></div>
+          <div><dt>Дата оплати</dt><dd class="paid-date"></dd></div>
+          <div><dt>Посадка</dt><dd class="boarding"></dd></div>
+        </dl>
+        <p class="note"></p>
+        <div class="card-actions">
+          <button class="secondary edit-client">Редагувати</button>
+          <button class="danger delete-client">Видалити</button>
+        </div>
+      </article>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>
