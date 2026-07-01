@@ -50,6 +50,14 @@
             <button type="button" id="cancelTripBtn" class="secondary">Скасувати</button>
           </div>
         </form>
+        <div class="all-finance" id="allFinance">
+          <h3>Загалом по всіх поїздках</h3>
+          <div class="mini-summary">
+            <div><span>Людей</span><strong id="allPeopleCount">0</strong></div>
+            <div><span>Отримано</span><strong id="allPaidAmount">0 грн</strong></div>
+            <div><span>Борг</span><strong id="allDebtAmount">0 грн</strong></div>
+          </div>
+        </div>
         <div id="tripList" class="trip-list"></div>
       </section>
 
@@ -67,6 +75,16 @@
           <div><span>Сума</span><strong id="totalAmount">0 грн</strong></div>
           <div><span>Оплачено</span><strong id="paidAmount">0 грн</strong></div>
           <div><span>Борг</span><strong id="debtAmount">0 грн</strong></div>
+        </div>
+
+        <div class="finance-box" id="financeBox" hidden>
+          <h3>Фінанси по цій поїздці</h3>
+          <div class="finance-grid">
+            <div><span>Аванси</span><strong id="advanceAmount">0 грн</strong><small id="advanceCount">0 людей</small></div>
+            <div><span>Повні оплати</span><strong id="fullPaidAmount">0 грн</strong><small id="fullPaidCount">0 людей</small></div>
+            <div><span>Отримано всього</span><strong id="receivedAmount">0 грн</strong><small>аванси + повні оплати</small></div>
+            <div><span>Ще мають доплатити</span><strong id="remainingAmount">0 грн</strong><small id="remainingCount">0 людей</small></div>
+          </div>
         </div>
 
         <form id="clientForm" class="form hidden">
