@@ -48,6 +48,17 @@ const els = {
   totalAmount: document.querySelector("#totalAmount"),
   paidAmount: document.querySelector("#paidAmount"),
   debtAmount: document.querySelector("#debtAmount"),
+  financeBox: document.querySelector("#financeBox"),
+  advanceAmount: document.querySelector("#advanceAmount"),
+  advanceCount: document.querySelector("#advanceCount"),
+  fullPaidAmount: document.querySelector("#fullPaidAmount"),
+  fullPaidCount: document.querySelector("#fullPaidCount"),
+  receivedAmount: document.querySelector("#receivedAmount"),
+  remainingAmount: document.querySelector("#remainingAmount"),
+  remainingCount: document.querySelector("#remainingCount"),
+  allPeopleCount: document.querySelector("#allPeopleCount"),
+  allPaidAmount: document.querySelector("#allPaidAmount"),
+  allDebtAmount: document.querySelector("#allDebtAmount"),
   searchInput: document.querySelector("#searchInput"),
   csvBtn: document.querySelector("#csvBtn"),
   exportBtn: document.querySelector("#exportBtn"),
@@ -79,6 +90,49 @@ function formatDate(value) {
 
 function getActiveTrip() {
   return state.trips.find((trip) => trip.id === state.activeTripId) || null;
+}
+
+function getFinanceSummary(clients = []) {
+  const activeClients = clients.filter((client) => client.status !== "cancelled");
+  const summary = {
+    people: activeClients.length,
+    total: 0,
+    paid: 0,
+    debt: 0,
+    advanceAmount: 0,
+    advanceCount: 0,
+    fullPaidAmount: 0,
+    fullPaidCount: 0,
+    remainingAmount: 0,
+    remainingCount: 0,
+  };
+
+  activeClients.forEach((client) => {
+    const price = Number(client.price || 0);
+    const paid = Number(client.paid || 0);
+    const debt = Math.max(price - paid, 0);
+
+    summary.total += price;
+    summary.paid += paid;
+    summary.debt += debt;
+
+    if (paid > 0 && debt > 0) {
+      summary.advanceAmount += paid;
+      summary.advanceCount += 1;
+    }
+
+    if (price > 0 && paid >= price) {
+      summary.fullPaidAmount += paid;
+      summary.fullPaidCount += 1;
+    }
+
+    if (debt > 0) {
+      summary.remainingAmount += debt;
+      summary.remainingCount += 1;
+    }
+  });
+
+  return summary;
 }
 
 function hasRemote() {
@@ -279,6 +333,11 @@ function renderSyncStatus() {
 function renderTrips() {
   const template = document.querySelector("#tripTemplate");
   els.tripList.innerHTML = "";
+  const allClients = state.trips.flatMap((trip) => trip.clients || []);
+  const allFinance = getFinanceSummary(allClients);
+  els.allPeopleCount.textContent = allFinance.people;
+  els.allPaidAmount.textContent = money(allFinance.paid);
+  els.allDebtAmount.textContent = money(allFinance.debt);
 
   if (state.trips.length === 0) {
     els.tripList.innerHTML = '<p class="muted">Поїздок ще немає.</p>';
@@ -310,6 +369,7 @@ function renderClients() {
   els.newClientBtn.disabled = !trip;
   els.csvBtn.disabled = !trip;
   els.summary.hidden = !trip;
+  els.financeBox.hidden = !trip;
 
   if (!trip) {
     els.activeTripTitle.textContent = "Оберіть поїздку";
@@ -328,12 +388,18 @@ function renderClients() {
   });
 
   const activeClients = (trip.clients || []).filter((client) => client.status !== "cancelled");
-  const total = activeClients.reduce((sum, client) => sum + Number(client.price || 0), 0);
-  const paid = activeClients.reduce((sum, client) => sum + Number(client.paid || 0), 0);
-  els.peopleCount.textContent = activeClients.length;
-  els.totalAmount.textContent = money(total);
-  els.paidAmount.textContent = money(paid);
-  els.debtAmount.textContent = money(Math.max(total - paid, 0));
+  const finance = getFinanceSummary(activeClients);
+  els.peopleCount.textContent = finance.people;
+  els.totalAmount.textContent = money(finance.total);
+  els.paidAmount.textContent = money(finance.paid);
+  els.debtAmount.textContent = money(finance.debt);
+  els.advanceAmount.textContent = money(finance.advanceAmount);
+  els.advanceCount.textContent = `${finance.advanceCount} людей`;
+  els.fullPaidAmount.textContent = money(finance.fullPaidAmount);
+  els.fullPaidCount.textContent = `${finance.fullPaidCount} людей`;
+  els.receivedAmount.textContent = money(finance.paid);
+  els.remainingAmount.textContent = money(finance.remainingAmount);
+  els.remainingCount.textContent = `${finance.remainingCount} людей`;
 
   if (clients.length === 0) {
     els.emptyState.textContent = query ? "За таким пошуком нічого не знайдено." : "У цій поїздці ще немає людей.";
