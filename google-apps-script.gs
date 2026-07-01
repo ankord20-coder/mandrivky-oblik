@@ -22,7 +22,18 @@ function doPost(e) {
   }
 }
 
-function doGet() {
+function doGet(e) {
+  const callback = e.parameter.callback || "";
+  const password = (e.parameter.password || "").trim();
+  const action = e.parameter.action || "";
+
+  if (callback && action === "load") {
+    if (password !== PASSWORD) {
+      return javascript(callback, { ok: false, error: "Неправильний пароль" });
+    }
+    return javascript(callback, { ok: true, data: loadData() });
+  }
+
   return json({ ok: true, message: "Сховище для обліку мандрівок працює" });
 }
 
@@ -54,4 +65,11 @@ function json(data) {
   return ContentService
     .createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function javascript(callback, data) {
+  const safeCallback = callback.replace(/[^\w.$]/g, "");
+  return ContentService
+    .createTextOutput(safeCallback + "(" + JSON.stringify(data) + ");")
+    .setMimeType(ContentService.MimeType.JAVASCRIPT);
 }
