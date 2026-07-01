@@ -148,20 +148,83 @@ function normalizeRemoteUrl(url) {
   return url.trim();
 }
 
-async function remoteRequest(action, payload = {}) {
-  const body = new URLSearchParams();
-  body.set("password", state.settings.remotePassword);
-  body.set("action", action);
-  body.set("payload", JSON.stringify(payload));
+function remoteLoad() {
+  return new Promise((resolve, reject) => {
+    const callbackName = `travelClientsCallback_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    const script = document.createElement("script");
+    const url = new URL(state.settings.remoteUrl);
+    url.searchParams.set("action", "load");
+    url.searchParams.set("password", state.settings.remotePassword);
+    url.searchParams.set("callback", callbackName);
 
-  const response = await fetch(state.settings.remoteUrl, {
-    method: "POST",
-    body,
+    const timer = window.setTimeout(() => {
+      cleanup();
+      reject(new Error("Не вдалося отримати спільні дані"));
+    }, 15000);
+
+    function cleanup() {
+      window.clearTimeout(timer);
+      delete window[callbackName];
+      script.remove();
+    }
+
+    window[callbackName] = (result) => {
+      cleanup();
+      if (!result.ok) {
+        reject(new Error(result.error || "Не вдалося синхронізувати"));
+        return;
+      }
+      resolve(result);
+    };
+
+    script.onerror = () => {
+      cleanup();
+      reject(new Error("Не вдалося підключитися до спільних даних"));
+    };
+
+    script.src = url.toString();
+    document.body.appendChild(script);
   });
-  const text = await response.text();
-  const parsed = JSON.parse(text);
-  if (!parsed.ok) throw new Error(parsed.error || "Не вдалося синхронізувати");
-  return parsed;
+}
+
+function remoteSave(payload) {
+  return new Promise((resolve) => {
+    const iframeName = `travelClientsFrame_${Date.now()}`;
+    const iframe = document.createElement("iframe");
+    const form = document.createElement("form");
+    const fields = {
+      password: state.settings.remotePassword,
+      action: "save",
+      payload: JSON.stringify(payload),
+    };
+
+    iframe.name = iframeName;
+    iframe.hidden = true;
+    form.hidden = true;
+    form.method = "POST";
+    form.action = state.settings.remoteUrl;
+    form.target = iframeName;
+
+    Object.entries(fields).forEach(([name, value]) => {
+      const input = document.createElement("input");
+      input.name = name;
+      input.value = value;
+      form.appendChild(input);
+    });
+
+    const done = () => {
+      setTimeout(() => {
+        iframe.remove();
+        form.remove();
+        resolve();
+      }, 300);
+    };
+
+    iframe.addEventListener("load", done, { once: true });
+    document.body.append(iframe, form);
+    form.submit();
+    setTimeout(done, 5000);
+  });
 }
 
 async function pullRemote({ showResult = false } = {}) {
@@ -169,7 +232,7 @@ async function pullRemote({ showResult = false } = {}) {
   state.syncing = true;
   setSyncStatus("Оновлюю спільні дані...");
   try {
-    const result = await remoteRequest("load");
+    const result = await remoteLoad();
     if (result.data && Array.isArray(result.data.trips)) {
       state.trips = result.data.trips;
       state.activeTripId = result.data.activeTripId || state.trips[0]?.id || null;
@@ -192,7 +255,7 @@ async function pushRemote() {
   state.syncing = true;
   setSyncStatus("Зберігаю у спільні дані...");
   try {
-    await remoteRequest("save", {
+    await remoteSave({
       trips: state.trips,
       activeTripId: state.activeTripId,
       updatedAt: new Date().toISOString(),
